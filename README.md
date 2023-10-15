@@ -1,6 +1,4 @@
 # DEVOPS_21-23
-Image 0 = S0
-Image 1  = S2
-Image 4= s4
-Image 5 = S1 et S2
-Image = Instance 2
+Le Vagrantfile contient l'ensemble des vm's et leurs config
+De plus le Playbook permet la config du serveurs DNS & DHCP et le déploiement des sites wordpress
+Et le fichier Hosts permet de faire l'adressage des ips sur le DHCP
