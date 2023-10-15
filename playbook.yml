@@ -1,0 +1,81 @@
+---
+- name: Configure DNS & DHCP and Install Services
+  hosts: servers
+  become: yes
+
+  tasks:
+    - name: Install DNSmasq
+      apt:
+        name: dnsmasq
+        state: present
+
+    - name: Configure DNSmasq for DHCP and DNS
+      template:
+        src: templates/dnsmasq.conf.j2
+        dest: /etc/dnsmasq.conf
+      notify:
+        - Restart DNSmasq
+
+    - name: Restart DNSmasq
+      service:
+        name: dnsmasq
+        state: restarted
+
+    - name: Install HAProxy
+      apt:
+        name: haproxy
+        state: present
+
+    - name: Configure HAProxy
+      template:
+        src: templates/haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+      notify:
+        - Restart HAProxy
+
+    - name: Restart HAProxy
+      service:
+        name: haproxy
+        state: restarted
+
+    # Add tasks for installing MariaDB, NFS server, and Apache + PHP
+
+- name: Deploy WordPress Sites
+  hosts: s1.infra:s2.infra
+  become: yes
+
+  tasks:
+    - name: Install Apache, PHP, MySQL Client, and NFS Client
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - apache2
+        - php
+        - libapache2-mod-php
+        - mysql-client
+        - nfs-common
+
+    - name: Configure Apache for WordPress
+      template:
+        src: templates/wordpress.conf.j2
+        dest: /etc/apache2/sites-available/wordpress
+      notify:
+        - Reload Apache
+
+    - name: Enable WordPress Site
+      command: a2ensite wordpress
+      notify:
+        - Reload Apache
+
+    - name: Reload Apache
+      service:
+        name: apache2
+        state: reloaded
+
+    - name: Mount NFS Share
+      mount:
+        name: /mnt/nfs
+        src: s4.infra:/home/data
+        fstype: nfs
+        state: mounted
